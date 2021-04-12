@@ -1,92 +1,88 @@
-print("SHREYAANS NAHATA, 19BCE2686\n")
-n = int(input('Enter the number of bits in the message: '))
-d = input('Enter the data bits: ')
-data = list(d)
-data.reverse()
-c,ch,j,r,h=0,0,0,0,[]
+def calcRedundantBits(length):
+	for i in range(length):
+		if(2**i >= length + i + 1):
+			return i
 
-while ((len(d)+r+1)>(pow(2,r))):
-    r=r+1
 
-for i in range(0,(r+len(data))):
-    p=(2**c)
+def posRedundantBits(data, pos):
+	j = 0
+	k = 1
+	m = len(data)
+	res = ''
 
-    if(p==(i+1)):
-        h.append(0)
-        c=c+1
+	for i in range(1, m + pos+1):
+		if(i == 2**j):
+			res = res + '0'
+			j += 1
+		else:
+			res = res + data[-1 * k]
+			k += 1
 
+	return res[::-1]
+
+
+def calcParityBits(data, pos):
+	n = len(data)
+
+	for i in range(pos):
+		val = 0
+		for j in range(1, n + 1):
+
+			if(j & (2**i) == (2**i)):
+				val = val ^ int(data[-1 * j])
+
+		data = data[:n-(2**i)] + str(val) + data[n-(2**i)+1:]
+	return data
+
+
+def detectError(data, nr):
+	n = len(data)
+	res = 0
+
+	for i in range(nr):
+		val = 0
+		for j in range(1, n + 1):
+			if(j & (2**i) == (2**i)):
+				val = val ^ int(data[-1 * j])
+
+		res = res + val*(10**i)
+
+	return int(str(res), 2)
+
+def correctError(data, pos):
+    data = list(data)
+    if data[-pos] == '0':
+        data[-pos] = '1'
+    elif data[-pos] == '1':
+        data[-pos] = '0'
+    
+    return str(''.join(data))
+
+if __name__ == "__main__":
+    print("SHREYAANS NAHATA: 19BCE2686\n")
+    num_bits = int(input("Enter the number of bits in the message: "))
+    data = input("Enter the frame to be sent: ")
+    print("\n--------- SENDING DATA ---------")
+    print("Sending frame: " + data)
+
+    parity_len = calcRedundantBits(num_bits)
+    arr = posRedundantBits(data, parity_len)
+    arr = calcParityBits(arr, parity_len)
+
+    codeword = ''
+    for i in range(parity_len):
+        codeword += arr[-2**i]
+
+    print("The Code Word is: " + codeword)
+    print("Data to be sent is: " + arr)
+
+    print("\n--------- RECEIVING DATA ---------")
+    rec = input("Enter the received message: ")
+    correction = detectError(rec, parity_len)
+
+    if correction == 0:
+        print("ERROR FREE DATA RECEIVED!")
     else:
-        h.append(int(data[j]))
-        j=j+1
-
-for parity in range(0,(len(h))):
-    ph=(2**ch)
-    if(ph==(parity+1)):
-        startIndex=ph-1
-        i=startIndex
-        toXor=[]
-
-        while(i<len(h)):
-            block=h[i:i+ph]
-            toXor.extend(block)
-            i+=2*ph
-
-        for z in range(1,len(toXor)):
-            h[startIndex]=h[startIndex]^toXor[z]
-        ch+=1
-
-h.reverse()
-print('\nThe generated code would be: ', end="")
-print(int(''.join(map(str, h))))
-
-
-d=input('\nEnter the received code word: ')
-data=list(d)
-data.reverse()
-c,ch,j,r,error,h,parity_list,h_copy=0,0,0,0,0,[],[],[]
-
-for k in range(0,len(data)):
-    p=(2**c)
-    h.append(int(data[k]))
-    h_copy.append(data[k])
-    if(p==(k+1)):
-        c=c+1
-        
-for parity in range(0,(len(h))):
-    ph=(2**ch)
-    if(ph==(parity+1)):
-
-        startIndex=ph-1
-        i=startIndex
-        toXor=[]
-
-        while(i<len(h)):
-            block=h[i:i+ph]
-            toXor.extend(block)
-            i+=2*ph
-
-        for z in range(1,len(toXor)):
-            h[startIndex]=h[startIndex]^toXor[z]
-        parity_list.append(h[parity])
-        ch+=1
-parity_list.reverse()
-error=sum(int(parity_list) * (2 ** i) for i, parity_list in enumerate(parity_list[::-1]))
-
-if((error)==0):
-    print('\nThere is no error in the received hamming code!')
-
-elif((error)>=len(h_copy)):
-    print('\nError cannot be detected!')
-
-else:
-    print('\nPosition of the error is: ',error)
-
-    if(h_copy[error-1]=='0'):
-        h_copy[error-1]='1'
-
-    elif(h_copy[error-1]=='1'):
-        h_copy[error-1]='0'
-        print('Hammming Code after correction is: ', end="")
-    h_copy.reverse()
-    print(int(''.join(map(str, h_copy))))
-    print("")
+        print("The position of the error is: " + str(correction))
+        correct_message = correctError(rec, correction)
+        print("The corrected message is: " + correct_message)
